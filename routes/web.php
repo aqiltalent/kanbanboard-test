@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ColumnController;
+use App\Http\Controllers\IndexController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,4 +15,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {});
+Route::get('/', [IndexController::class, 'index']);
+Route::resource('columns', ColumnController::class)
+	->names(['index' => 'columns'])
+	->only(['index', 'store', 'update', 'destroy']);
