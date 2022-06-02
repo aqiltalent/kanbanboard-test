@@ -2,68 +2,52 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ColumnCollection;
 use App\Models\Card;
+use App\Repositories\CardRepository;
+use App\Repositories\ColumnRepository;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class CardController extends Controller
 {
-	/**
-	 * Display a listing of the resource.
-	 *
-	 * @return void
-	 */
-	public function index()
-	: void
-	{
-		//
-	}
+	protected CardRepository   $cardRepo;
+	protected ColumnRepository $columnRepo;
 
-	/**
-	 * Show the form for creating a new resource.
-	 *
-	 * @return void
-	 */
-	public function create()
-	: void
+	public function __construct(CardRepository $cardRepository, ColumnRepository $columnRepository)
 	{
-		//
+		$this->cardRepo = $cardRepository;
+		$this->columnRepo = $columnRepository;
 	}
 
 	/**
 	 * Store a newly created resource in storage.
 	 *
 	 * @param Request $request
-	 * @return void
+	 * @return JsonResponse
 	 */
 	public function store(Request $request)
-	: void
+	: JsonResponse
 	{
-		//
-	}
+		$request->validate([
+			'card_title'       => ['required'],
+			'card_description' => ['required'],
+		]);
 
-	/**
-	 * Display the specified resource.
-	 *
-	 * @param Card $card
-	 * @return void
-	 */
-	public function show(Card $card)
-	: void
-	{
-		//
-	}
+		$this->cardRepo->model()->insertGetId([
+			'user_id'              => 1,
+			'column_id'            => $request->input('column_id'),
+			'card_title'           => $request->input('card_title'),
+			'card_description'     => $request->input('card_description'),
+			'card_order'           => $request->input('card_order'),
+			'card_attachment_file' => '',
+			'assigned_user'        => 0
+		]);
 
-	/**
-	 * Show the form for editing the specified resource.
-	 *
-	 * @param Card $card
-	 * @return void
-	 */
-	public function edit(Card $card)
-	: void
-	{
-		//
+		return response()->json([
+			'result' => 'success',
+			'columns'   => new ColumnCollection($this->columnRepo->getAllColumns())
+		]);
 	}
 
 	/**
@@ -71,23 +55,41 @@ class CardController extends Controller
 	 *
 	 * @param Request $request
 	 * @param Card $card
-	 * @return void
+	 * @return JsonResponse
 	 */
 	public function update(Request $request, Card $card)
-	: void
+	: JsonResponse
 	{
-		//
+		$request->validate([
+			'card_title'       => ['required'],
+			'card_description' => ['required'],
+		]);
+
+		$card->column_id = $request->input('column_id');
+		$card->card_title = $request->input('card_title');
+		$card->card_description = $request->input('card_description');
+		$card->card_order = $request->input('card_order');
+		$card->save();
+
+		return response()->json([
+			'result' => 'success'
+		]);
 	}
 
 	/**
 	 * Remove the specified resource from storage.
 	 *
 	 * @param Card $card
-	 * @return void
+	 * @return JsonResponse
 	 */
 	public function destroy(Card $card)
-	: void
+	: JsonResponse
 	{
-		//
+		$card->delete();
+
+		return response()->json([
+			'result' => 'success',
+			'columns'   => new ColumnCollection($this->columnRepo->getAllColumns())
+		]);
 	}
 }

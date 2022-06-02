@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CardController;
 use App\Http\Controllers\ColumnController;
 use App\Http\Controllers\IndexController;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [IndexController::class, 'index']);
+Route::get('/dump-db', [IndexController::class, 'dumpDatabase']);
 Route::resource('columns', ColumnController::class)
 	->names(['index' => 'columns'])
 	->only(['index', 'store', 'update', 'destroy']);
+
+Route::resource('cards', CardController::class)
+	->names(['index' => 'cards'])
+	->only(['store', 'update', 'destroy']);

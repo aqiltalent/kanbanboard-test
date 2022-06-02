@@ -2293,6 +2293,9 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: "KModal",
   props: {
@@ -2301,12 +2304,16 @@ __webpack_require__.r(__webpack_exports__);
       "default": 'Kanban'
     },
     width: {
-      type: Number,
+      type: String | Number,
       "default": 600
     },
     height: {
-      type: Number,
+      type: String | Number,
       "default": 300
+    },
+    adaptive: {
+      type: Boolean,
+      "default": true
     }
   }
 });
@@ -2329,6 +2336,65 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_KButton__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../components/KButton */ "./resources/js/components/KButton.vue");
 /* harmony import */ var _components_DeleteConfirm__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../components/DeleteConfirm */ "./resources/js/components/DeleteConfirm.vue");
 /* harmony import */ var _components_KModal__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../components/KModal */ "./resources/js/components/KModal.vue");
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -2493,16 +2559,26 @@ __webpack_require__.r(__webpack_exports__);
       columnTitle: '',
       showEditCard: false,
       selectedColumn: -1,
+      deleteCard: null,
       selectedCard: null,
       validations: {
         addColumn: false
-      }
+      },
+      dragOptions: {
+        animation: 200
+      },
+      isDragging: false,
+      delayedDragging: false,
+      oldItem: null
     };
   },
   mounted: function mounted() {
     this.columns = JSON.parse(this.columns_data).data;
   },
   methods: {
+    /**
+     * Toggle add new column
+     */
     toggleAddNewColumn: function toggleAddNewColumn() {
       this.addNewColumn = !this.addNewColumn;
 
@@ -2510,6 +2586,11 @@ __webpack_require__.r(__webpack_exports__);
         this.columnTitle = '';
       }
     },
+
+    /**
+     * Add column data to database
+     * @returns {boolean}
+     */
     addColumn: function addColumn() {
       var _this = this;
 
@@ -2529,14 +2610,29 @@ __webpack_require__.r(__webpack_exports__);
         _this.columns = r.data.columns.data;
       });
     },
+
+    /**
+     * confirm to delete column
+     * @param ind
+     */
     confirmDelete: function confirmDelete(ind) {
       this.selectedColumn = ind;
       this.$modal.show('delete-confirm');
     },
+
+    /**
+     * cancel to delete column
+     */
     cancelDelete: function cancelDelete() {
       this.selectedColumn = -1;
       this.$modal.hide('delete-confirm');
     },
+
+    /**
+     * delete column from database
+     *
+     * @returns {boolean}
+     */
     deleteColumn: function deleteColumn() {
       var _this2 = this;
 
@@ -2551,25 +2647,216 @@ __webpack_require__.r(__webpack_exports__);
         _this2.cancelDelete();
       });
     },
-    showEditCardModal: function showEditCardModal(ind, column) {
-      if (ind === 0) {
+
+    /**
+     * show edit card modal
+     * @param ind
+     * @param column
+     * @param colInd
+     */
+    showEditCardModal: function showEditCardModal(ind, column, colInd) {
+      this.showEditCard = true;
+
+      if (ind < 0) {
         this.selectedCard = Object.assign({}, {
           id: 0,
           column_id: column.id,
           card_title: '',
           card_description: '',
-          card_order: -1,
-          comments: null
+          card_order: ind,
+          comments: null,
+          columnInd: colInd
         });
       } else {
         this.selectedCard = Object.assign({}, column.cards[ind]);
+        this.selectedCard.columnInd = colInd;
+        this.selectedCard.card_order = ind;
       }
 
       this.$modal.show('edit-card');
     },
+
+    /**
+     * close edit card modal
+     */
     closeEditCardModal: function closeEditCardModal() {
-      this.selectedCard = null;
+      this.showEditCard = false;
       this.$modal.hide('edit-card');
+    },
+
+    /**
+     * Get column index
+     * @param id
+     * @returns {*}
+     */
+    getColIndex: function getColIndex(id) {
+      return this.columns.findIndex(function (item) {
+        return item.id === id;
+      });
+    },
+
+    /**
+     * save card data to database
+     */
+    saveCardData: function saveCardData() {
+      var columnInd = this.getColIndex(this.selectedCard.column_id);
+
+      if (this.selectedCard.card_order < 0 || this.selectedCard.id === 0) {
+        var saveCard = Object.assign({}, _objectSpread(_objectSpread({}, this.selectedCard), {}, {
+          card_order: this.columns[columnInd].cards.length
+        }));
+        this.columns[columnInd].cards.push(saveCard);
+        this.createCard(saveCard);
+      } else {
+        this.columns[columnInd].cards[this.selectedCard.card_order] = Object.assign({}, this.selectedCard);
+        this.updateCard(this.columns[columnInd].cards[this.selectedCard.card_order], columnInd);
+      }
+    },
+    onMoveCard: function onMoveCard(e) {
+      this.oldItem = Object.assign({}, e.draggedContext.element);
+      return true;
+    },
+    onMoveEnd: function onMoveEnd(e) {
+      var _this3 = this;
+
+      var oldColumnIndex = this.getColIndex(this.oldItem.column_id);
+      var columnId = e.to.getAttribute('id');
+      var columnIndex = parseInt(columnId.split('-')[1]);
+      var oldColumn = Object.assign({}, this.columns[oldColumnIndex]);
+      var newColumn = Object.assign({}, this.columns[columnIndex]);
+      this.columns[oldColumnIndex].cards.map(function (el, ind) {
+        el.card_order = ind;
+        el.column_id = oldColumn.id;
+        el.columnInd = oldColumnIndex;
+        return el;
+      });
+      this.$nextTick(function () {
+        _this3.columns[columnIndex].cards.map(function (el, ind) {
+          el.card_order = ind;
+          el.columnInd = columnIndex;
+          el.column_id = newColumn.id;
+          return el;
+        });
+
+        _this3.$nextTick(function () {
+          var cardIndex = _this3.columns[columnIndex].cards.findIndex(function (item) {
+            return item.id === _this3.oldItem.id;
+          });
+
+          _this3.updateCard(_this3.columns[columnIndex].cards[cardIndex], columnIndex);
+        });
+      });
+    },
+
+    /**
+     * Create Card
+     *
+     * @param card
+     */
+    createCard: function createCard(card) {
+      var _this4 = this;
+
+      axios.post('/cards', {
+        column_id: card.column_id,
+        card_title: card.card_title,
+        card_description: card.card_description,
+        card_order: card.card_order
+      }).then(function (r) {
+        _this4.columns = r.data.columns.data;
+
+        if (_this4.showEditCard) {
+          _this4.closeEditCardModal();
+        }
+      });
+    },
+
+    /**
+     * Update card data
+     *
+     * @param card
+     * @param columnInd
+     */
+    updateCard: function updateCard(card, columnInd) {
+      var _this5 = this;
+
+      axios.put("/cards/".concat(card.id), {
+        column_id: card.column_id,
+        card_title: card.card_title,
+        card_description: card.card_description,
+        card_order: card.card_order
+      }).then(function (r) {
+        if (_this5.showEditCard) {
+          _this5.closeEditCardModal();
+        }
+
+        _this5.updateCardOrders(columnInd);
+      });
+    },
+
+    /**
+     * Update cards order numbers
+     *
+     * @param columnInd
+     */
+    updateCardOrders: function updateCardOrders(columnInd) {
+      var column = this.columns[columnInd];
+      axios.put("/columns/".concat(column.id), {
+        cards: column.cards
+      }).then(function (r) {});
+    },
+
+    /**
+     * confirm to delete column
+     * @param card
+     */
+    confirmDeleteCard: function confirmDeleteCard(card) {
+      this.deleteCard = card;
+      this.$modal.show('delete-card');
+    },
+
+    /**
+     * cancel to delete column
+     */
+    cancelDeleteCard: function cancelDeleteCard() {
+      this.deleteCard = null;
+      this.$modal.hide('delete-card');
+    },
+
+    /**
+     * delete column from database
+     *
+     * @returns {boolean}
+     */
+    deleteCardData: function deleteCardData() {
+      var _this6 = this;
+
+      if (!this.deleteCard) {
+        this.cancelDeleteCard();
+        return false;
+      }
+
+      axios["delete"]("/cards/".concat(this.deleteCard.id)).then(function (r) {
+        _this6.columns = r.data.columns.data;
+
+        _this6.cancelDeleteCard();
+      });
+    },
+    dumpDatabase: function dumpDatabase() {
+      window.open('/dump-db', '_blank');
+    }
+  },
+  watch: {
+    isDragging: function isDragging(newValue) {
+      var _this7 = this;
+
+      if (newValue) {
+        this.delayedDragging = true;
+        return;
+      }
+
+      this.$nextTick(function () {
+        _this7.delayedDragging = false;
+      });
     }
   }
 });
@@ -24193,7 +24480,16 @@ var render = function () {
   var _c = _vm._self._c || _h
   return _c(
     "modal",
-    { attrs: { name: _vm.modalName, width: _vm.width, height: _vm.height } },
+    {
+      attrs: {
+        name: _vm.modalName,
+        width: _vm.width,
+        height: _vm.height,
+        adaptive: _vm.adaptive,
+        draggable: true,
+        resizable: true,
+      },
+    },
     [
       _c(
         "div",
@@ -24236,52 +24532,147 @@ var render = function () {
     { staticClass: "kanban__main" },
     [
       _vm._l(_vm.columns, function (column, index) {
-        return _c("div", { staticClass: "kanban__column" }, [
-          _c("div", { staticClass: "kanban__column__header" }, [
-            _c("span", [_vm._v(_vm._s(column.title))]),
+        return _c(
+          "div",
+          { key: "column-" + index, staticClass: "kanban__column" },
+          [
+            _c("div", { staticClass: "kanban__column__header" }, [
+              _c("span", [_vm._v(_vm._s(column.title))]),
+              _vm._v(" "),
+              _c(
+                "span",
+                {
+                  staticClass: "ml-auto kanban__column__header__close",
+                  on: {
+                    click: function ($event) {
+                      return _vm.confirmDelete(index)
+                    },
+                  },
+                },
+                [_vm._v("\n        ×\n      ")]
+              ),
+            ]),
             _vm._v(" "),
             _c(
-              "span",
+              "draggable",
+              _vm._b(
+                {
+                  staticClass: "kanban__column__wrapper",
+                  attrs: {
+                    move: _vm.onMoveCard,
+                    id: "column-" + index,
+                    group: "column",
+                  },
+                  on: {
+                    start: function ($event) {
+                      _vm.isDragging = true
+                    },
+                    end: _vm.onMoveEnd,
+                  },
+                  model: {
+                    value: column.cards,
+                    callback: function ($$v) {
+                      _vm.$set(column, "cards", $$v)
+                    },
+                    expression: "column.cards",
+                  },
+                },
+                "draggable",
+                _vm.dragOptions,
+                false
+              ),
+              _vm._l(column.cards, function (card, cardInd) {
+                return column.cards.length
+                  ? _c(
+                      "div",
+                      {
+                        key: "card-" + cardInd,
+                        staticClass: "kanban__column__wrapper__card",
+                      },
+                      [
+                        _c(
+                          "div",
+                          {
+                            staticClass: "kanban__column__wrapper__card__title",
+                          },
+                          [
+                            _vm._v(
+                              "\n          " +
+                                _vm._s(card.card_title) +
+                                "\n        "
+                            ),
+                          ]
+                        ),
+                        _vm._v(" "),
+                        _c(
+                          "div",
+                          {
+                            staticClass:
+                              "kanban__column__wrapper__card__control",
+                          },
+                          [
+                            _c(
+                              "k-button",
+                              {
+                                staticClass: "p-1 kanban__button--blue",
+                                attrs: { type: "button" },
+                                on: {
+                                  "button-click": function ($event) {
+                                    return _vm.showEditCardModal(
+                                      cardInd,
+                                      column,
+                                      index
+                                    )
+                                  },
+                                },
+                              },
+                              [_c("i", { staticClass: "far fa-edit" })]
+                            ),
+                            _vm._v(" "),
+                            _c(
+                              "k-button",
+                              {
+                                staticClass: "p-1 kanban__button--red ml-auto",
+                                attrs: { type: "button" },
+                                on: {
+                                  "button-click": function ($event) {
+                                    return _vm.confirmDeleteCard(card)
+                                  },
+                                },
+                              },
+                              [_c("i", { staticClass: "far fa-trash-alt" })]
+                            ),
+                          ],
+                          1
+                        ),
+                      ]
+                    )
+                  : _vm._e()
+              }),
+              0
+            ),
+            _vm._v(" "),
+            _c(
+              "div",
               {
-                staticClass: "ml-auto kanban__column__header__close",
+                staticClass: "kanban__column__footer kanban__text",
                 on: {
                   click: function ($event) {
-                    return _vm.confirmDelete(index)
+                    return _vm.showEditCardModal(-1, column, index)
                   },
                 },
               },
-              [_vm._v("\n        ×\n      ")]
+              [
+                _c("i", { staticClass: "fas fa-square-plus" }),
+                _vm._v(" "),
+                _c("span", { staticClass: "kanban__column__new__add__text" }, [
+                  _vm._v("\n        Add a card\n      "),
+                ]),
+              ]
             ),
-          ]),
-          _vm._v(" "),
-          _c(
-            "div",
-            { staticClass: "kanban__column__wrapper" },
-            _vm._l(column.cards, function (card, cardInd) {
-              return _c("div", { staticClass: "kanban__column__wrapper__card" })
-            }),
-            0
-          ),
-          _vm._v(" "),
-          _c(
-            "div",
-            {
-              staticClass: "kanban__column__footer kanban__text",
-              on: {
-                click: function ($event) {
-                  return _vm.showEditCardModal(0, column)
-                },
-              },
-            },
-            [
-              _c("i", { staticClass: "fas fa-square-plus" }),
-              _vm._v(" "),
-              _c("span", { staticClass: "kanban__column__new__add__text" }, [
-                _vm._v("\n        Add a card\n      "),
-              ]),
-            ]
-          ),
-        ])
+          ],
+          1
+        )
       }),
       _vm._v(" "),
       _c("div", { staticClass: "kanban__column__new" }, [
@@ -24372,7 +24763,11 @@ var render = function () {
         [
           _c(
             "k-button",
-            { staticClass: "kanban__button", attrs: { type: "button" } },
+            {
+              staticClass: "kanban__button",
+              attrs: { type: "button" },
+              on: { "button-click": _vm.dumpDatabase },
+            },
             [_vm._v("\n      Export DB\n    ")]
           ),
         ],
@@ -24388,10 +24783,19 @@ var render = function () {
         on: { "ok-sure": _vm.deleteColumn, cancel: _vm.cancelDelete },
       }),
       _vm._v(" "),
+      _c("delete-confirm", {
+        attrs: {
+          "modal-name": "delete-card",
+          "ok-label": "Delete",
+          "cancel-label": "Cancel",
+        },
+        on: { "ok-sure": _vm.deleteCardData, cancel: _vm.cancelDeleteCard },
+      }),
+      _vm._v(" "),
       _c(
         "k-modal",
         {
-          attrs: { "modal-name": "edit-card", width: 350, height: 300 },
+          attrs: { "modal-name": "edit-card" },
           scopedSlots: _vm._u([
             {
               key: "header",
@@ -24408,38 +24812,115 @@ var render = function () {
               key: "footer",
               fn: function () {
                 return [
-                  _c(
-                    "div",
-                    { staticClass: "kanban__modal__footer" },
-                    [
-                      _c(
-                        "k-button",
-                        {
-                          staticClass: "kanban__button--green",
-                          attrs: { type: "button" },
-                        },
-                        [_vm._v("\n          Save\n        ")]
-                      ),
-                      _vm._v(" "),
-                      _c(
-                        "k-button",
-                        {
-                          staticClass: "kanban__button--orange ml-auto",
-                          attrs: { type: "button" },
-                          on: { "button-click": _vm.closeEditCardModal },
-                        },
-                        [_vm._v("\n          Cancel\n        ")]
-                      ),
-                    ],
-                    1
-                  ),
+                  _vm.showEditCard
+                    ? _c(
+                        "div",
+                        { staticClass: "kanban__modal__footer" },
+                        [
+                          _c(
+                            "k-button",
+                            {
+                              staticClass: "kanban__button--green",
+                              attrs: {
+                                type: "button",
+                                disabled:
+                                  !_vm.selectedCard.card_title ||
+                                  !_vm.selectedCard.card_description,
+                              },
+                              on: { "button-click": _vm.saveCardData },
+                            },
+                            [_vm._v("\n          Save\n        ")]
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "k-button",
+                            {
+                              staticClass: "kanban__button--orange ml-auto",
+                              attrs: { type: "button" },
+                              on: { "button-click": _vm.closeEditCardModal },
+                            },
+                            [_vm._v("\n          Cancel\n        ")]
+                          ),
+                        ],
+                        1
+                      )
+                    : _vm._e(),
                 ]
               },
               proxy: true,
             },
           ]),
         },
-        [_vm._v(" "), _c("div", { staticClass: "kanban__modal__body" })]
+        [
+          _vm._v(" "),
+          _vm.showEditCard
+            ? _c("div", { staticClass: "kanban__modal__body" }, [
+                _c("div", { staticClass: "kanban__form__group" }, [
+                  _c("label", { staticClass: "kanban__form__label" }, [
+                    _vm._v("\n          Card Title:\n        "),
+                  ]),
+                  _vm._v(" "),
+                  _c("input", {
+                    directives: [
+                      {
+                        name: "model",
+                        rawName: "v-model",
+                        value: _vm.selectedCard.card_title,
+                        expression: "selectedCard.card_title",
+                      },
+                    ],
+                    staticClass: "kanban__input",
+                    attrs: { type: "text" },
+                    domProps: { value: _vm.selectedCard.card_title },
+                    on: {
+                      input: function ($event) {
+                        if ($event.target.composing) {
+                          return
+                        }
+                        _vm.$set(
+                          _vm.selectedCard,
+                          "card_title",
+                          $event.target.value
+                        )
+                      },
+                    },
+                  }),
+                ]),
+                _vm._v(" "),
+                _c("div", { staticClass: "kanban__form__group" }, [
+                  _c("label", { staticClass: "kanban__form__label" }, [
+                    _vm._v("\n          Card Description:\n        "),
+                  ]),
+                  _vm._v(" "),
+                  _c("textarea", {
+                    directives: [
+                      {
+                        name: "model",
+                        rawName: "v-model",
+                        value: _vm.selectedCard.card_description,
+                        expression: "selectedCard.card_description",
+                      },
+                    ],
+                    staticClass: "kanban__input",
+                    attrs: { rows: "3" },
+                    domProps: { value: _vm.selectedCard.card_description },
+                    on: {
+                      input: function ($event) {
+                        if ($event.target.composing) {
+                          return
+                        }
+                        _vm.$set(
+                          _vm.selectedCard,
+                          "card_description",
+                          $event.target.value
+                        )
+                      },
+                    },
+                  }),
+                ]),
+              ])
+            : _vm._e(),
+        ]
       ),
     ],
     2

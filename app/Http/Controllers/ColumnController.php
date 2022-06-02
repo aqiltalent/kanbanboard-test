@@ -26,11 +26,9 @@ class ColumnController extends Controller
 	public function index()
 	: JsonResponse
 	{
-		$allColumns = $this->columnRepo->getAllColumns();
-
 		return response()->json([
 			'result' => 'success',
-			'data'   => new ColumnCollection($allColumns)
+			'data' => new ColumnCollection($this->columnRepo->getAllColumns())
 		]);
 	}
 
@@ -99,12 +97,23 @@ class ColumnController extends Controller
 	 *
 	 * @param Request $request
 	 * @param Column $column
-	 * @return Response
+	 * @return JsonResponse
 	 */
 	public function update(Request $request, Column $column)
-	: Response
+	: JsonResponse
 	{
-		//
+		$cards = $request->input('cards');
+		if ($cards) {
+			foreach ($cards as $card) {
+				$colCard = $column->cards()->find($card['id']);
+				$colCard->card_order = $card['card_order'];
+				$colCard->save();
+			}
+		}
+
+		return response()->json([
+			'result' => 'success'
+		]);
 	}
 
 	/**

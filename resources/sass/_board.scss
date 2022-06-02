@@ -55,7 +55,7 @@
 			width: 100%;
 
 			&__close {
-				margin-right: 10px;
+				margin-right: 5px;
 				font-size: 22pt;
 				font-weight: bold;
 				color: $red;
@@ -73,12 +73,41 @@
 			width: 100%;
 			height: calc(100% - 60px);
 			overflow: auto;
-			gap: 10px;
+			gap: 5px;
+			display: flex;
+			flex-direction: column;
 
 			&__card {
 				min-height: 65px;
 				border-radius: 4px;
 				background-color: #ffffff;
+				padding: 10px;
+				display: flex;
+				box-sizing: border-box;
+				align-items: center;
+				cursor: move;
+				width: 100%;
+
+				&__title {
+					font-size: 18px;
+					font-weight: bold;
+				}
+
+				&__control {
+					margin-left: auto;
+
+					button {
+						opacity: 0.8;
+					}
+				}
+
+				&:hover {
+					&__control {
+						button {
+							opacity: 1;
+						}
+					}
+				}
 			}
 		}
 

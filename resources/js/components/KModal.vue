@@ -3,6 +3,9 @@
       :name="modalName"
       :width="width"
       :height="height"
+      :adaptive="adaptive"
+      :draggable="true"
+      :resizable="true"
   >
     <div class="kanban__modal__header">
       <slot name="header"></slot>
@@ -27,12 +30,16 @@ export default {
       default: 'Kanban'
     },
     width: {
-      type: Number,
+      type: String | Number,
       default: 600
     },
     height: {
-      type: Number,
+      type: String | Number,
       default: 300
+    },
+    adaptive: {
+      type: Boolean,
+      default: true
     }
   }
 }
