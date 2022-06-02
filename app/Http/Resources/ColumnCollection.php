@@ -17,14 +17,7 @@ class ColumnCollection extends ResourceCollection
 	: array
 	{
 		return [
-			'columns'    => $this->collection->map(fn($el) => new ColumnResource($el)),
-			'pagination' => [
-				'total'        => $this->total(),
-				'count'        => $this->count(),
-				'per_page'     => $this->perPage(),
-				'current_page' => $this->currentPage(),
-				'last_page'    => $this->lastPage(),
-			]
+			'data' => $this->collection->map(fn($el) => new ColumnResource($el))
 		];
 	}
 }

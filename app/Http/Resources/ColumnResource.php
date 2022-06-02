@@ -40,7 +40,7 @@ class ColumnResource extends JsonResource
 							];
 						}),
 				];
-			}),
+			})
 		];
 	}
 }

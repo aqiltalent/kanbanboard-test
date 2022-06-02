@@ -49,12 +49,25 @@ class ColumnController extends Controller
 	 * Store a newly created resource in storage.
 	 *
 	 * @param Request $request
-	 * @return Response
+	 * @return JsonResponse
 	 */
 	public function store(Request $request)
-	: Response
+	: JsonResponse
 	{
-		//
+		$request->validate([
+			'column_title' => ['required']
+		]);
+
+		$this->columnRepo->model()->create([
+			'user_id'      => 1, // TODO: auth()->user()->id
+			'column_title' => $request->input('column_title'),
+			'column_order' => ($this->columnRepo->count() + 1),
+		]);
+
+		return response()->json([
+			'result'  => 'success',
+			'columns' => new ColumnCollection($this->columnRepo->getAllColumns())
+		]);
 	}
 
 	/**
@@ -98,11 +111,18 @@ class ColumnController extends Controller
 	 * Remove the specified resource from storage.
 	 *
 	 * @param Column $column
-	 * @return Response
+	 * @return JsonResponse
 	 */
 	public function destroy(Column $column)
-	: Response
+	: JsonResponse
 	{
-		//
+		$column->cards()->delete();
+
+		$column->delete();
+
+		return response()->json([
+			'result'  => 'success',
+			'columns' => new ColumnCollection($this->columnRepo->getAllColumns())
+		]);
 	}
 }
