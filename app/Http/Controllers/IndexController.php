@@ -8,6 +8,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Spatie\DbDumper\Databases\MySql;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class IndexController extends Controller
 {
@@ -35,17 +36,24 @@ class IndexController extends Controller
 	/**
 	 * Dump Database
 	 *
-	 * @return void
+	 * @return BinaryFileResponse
 	 */
 	public function dumpDatabase()
-	: void
+	: BinaryFileResponse
 	{
 		$dbName = config('database.connections.mysql.database');
+		$file = "dump_{$dbName}.sql";
 
 		MySql::create()
 			->setDbName($dbName)
 			->setUserName(config('database.connections.mysql.username'))
 			->setPassword(config('database.connections.mysql.password'))
-			->dumpToFile("dump_{$dbName}.sql");
+			->dumpToFile($file);
+
+		$headers = [
+			'Content-Type: application/sql',
+		];
+
+		return response()->download(public_path() . "/{$file}", "{$dbName}.sql", $headers);
 	}
 }
